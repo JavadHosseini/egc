@@ -1,0 +1,3 @@
+EUtranCellFDD => A0, A1, A2, B0, B1, B2, C0, C1, C2
+main params => 28th (125 counters), 29th, 62th (1225 counters)  md tag
+we have 3 dim => mt, moid, r
