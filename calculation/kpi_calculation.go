@@ -5,11 +5,12 @@ import (
 	"xml-parser/models"
 )
 
-func Calculate(mdc models.MDC) {
-	accessibilityCalculation(mdc)
+func Calculate(mdc models.MDC) map[string]map[string]int {
+	kpis := accessibilityCalculation(mdc)
+	return kpis
 }
 
-func accessibilityCalculation(mdc models.MDC) {
+func accessibilityCalculation(mdc models.MDC) map[string]map[string]int {
 	md2761 := populateCountersKeyValue(mdc)
 	KPIs := calculateAccessibilityKPIs(md2761)
 
@@ -19,6 +20,7 @@ func accessibilityCalculation(mdc models.MDC) {
 			println(k, ":", v)
 		}
 	}
+	return KPIs
 }
 
 func populateCountersKeyValue(mdc models.MDC) map[string]map[string]string {
@@ -56,22 +58,41 @@ func calculateAccessibilityKPIs(md2761 map[string]map[string]string) map[string]
 
 func convertCounterToInt(EUtranCellFDDValue map[string]string) map[string]int {
 	integerCounter := make(map[string]int)
-	integerCounter["pmRrcConnEstabSucc"], _ = strconv.Atoi(EUtranCellFDDValue["pmRrcConnEstabSucc"])
-	integerCounter["pmRrcConnEstabAtt"], _ = strconv.Atoi(EUtranCellFDDValue["pmRrcConnEstabAtt"])
-	return integerCounter
+	accessibilityCounters := []string{
+		"pmRrcConnEstabSucc", "pmRrcConnEstabAtt", "pmRrcConnEstabAttReatt", "pmRrcConnEstabFailMmeOvlMos",
+		"pmRrcConnEstabFailMmeOvlMod", "pmS1SigConnEstabSucc", "pmS1SigConnEstabAtt", "pmS1SigConnEstabFailMmeOvlMos",
+		"pmErabEstabSuccInit", "pmErabEstabAttInit", "pmErabEstabSuccAdded", "pmErabEstabAttAdded", "pmErabEstabAttAddedHoOngoing",
+		"pmErabEstabFailAddedLic", "pmRrcConnEstabFailLic", "pmRrcConnEstabAttMod", "pmRrcConnEstabAttMos", "pmRrcConnEstabAttEm",
+		"pmRrcConnEstabAttMta", "pmRrcConnEstabAttHpa", "pmErabEstabFailInitLic", "pmUeCtxtEstabSucc", "pmUeCtxtEstabAtt",
+		"pmPagDiscarded", "pmPagDiscarded", "pmPagReceived", "pmRaSuccCbra", "pmRaAttCbra", "pmRaFailCbraMsg2Disc",
+	}
 
+	for _, cnt := range accessibilityCounters {
+		integerCounter[cnt], _ = strconv.Atoi(EUtranCellFDDValue[cnt])
+	}
+	return integerCounter
 }
 
 func calculateKPIs(counters map[string]int) map[string]int {
-	var (
-		Acc_RrcConnSetupSuccRate int
-		Acc_test                 int
-	)
-	Acc_RrcConnSetupSuccRate = 100 * counters["pmRrcConnEstabSucc"]
-	Acc_test = 100 * counters["pmRrcConnEstabAtt"]
 	kpi := make(map[string]int)
-	kpi["Acc_RrcConnSetupSuccRate"] = Acc_RrcConnSetupSuccRate
-	kpi["Acc_test"] = Acc_test
+	// 2.1 Accessibility (EUtranCellFDD/TDD)
+	kpi["Acc_RrcConnSetupSuccRate"] = 100 * counters["pmRrcConnEstabSucc"] / (counters["pmRrcConnEstabAtt"] - counters["pmRrcConnEstabAttReatt"] - counters["pmRrcConnEstabFailMmeOvlMos"] - counters["pmRrcConnEstabFailMmeOvlMod"])
+	kpi["Acc_S1SigEstabSuccRate"] = 100 * counters["pmS1SigConnEstabSucc"] / (counters["pmS1SigConnEstabAtt"] - counters["pmS1SigConnEstabFailMmeOvlMos"])
+	kpi["Acc_InitialErabSetupSuccRate"] = 100 * counters["pmErabEstabSuccInit"] / counters["pmErabEstabAttInit"]
+	//kpi["Acc_InitialERabEstabSuccRate"] = 100 * kpi["Acc_RrcConnSetupSuccRate"] * kpi["Acc_S1SigEstabSuccRate"] * kpi["Acc_InitialErabSetupSuccRate"] / 10000
+	//kpi["Acc_AddedERabEstabSuccRate"] = 100 * counters["pmErabEstabSuccAdded"] / (counters["pmErabEstabAttAdded"] - counters["pmErabEstabAttAddedHoOngoing"])
+	// kpi["Acc_AddedERabEstabFailRateDueToMultipleLicense"] = 100 * counters["pmErabEstabFailAddedLic"] / counters["pmErabEstabAttAdded"]
+	// kpi["Acc_RrcConnSetupFailureRateDueToLackOfConnectedUsersLicense"] = 100 * counters["pmRrcConnEstabFailLic"] / counters["pmRrcConnEstabAtt"]
+	// kpi["Acc_RrcConnSetupRatioForMOData"] = 100 * counters["pmRrcConnEstabAttMod"] / counters["pmRrcConnEstabAtt"]
+	// kpi["Acc_RrcConnSetupRatioForMOSignalling"] = 100 * counters["pmRrcConnEstabAttMos"] / counters["pmRrcConnEstabAtt"]
+	// kpi["Acc_RrcConnSetupRatioForEmergency"] = 100 * counters["pmRrcConnEstabAttEm"] / counters["pmRrcConnEstabAtt"]
+	// kpi["Acc_RrcConnSetupRatioForMobileTerminating"] = 100 * counters["pmRrcConnEstabAttMta"] / counters["pmRrcConnEstabAtt"]
+	// kpi["Acc_RrcConnSetupRatioForHighPrioAccess"] = 100 * counters["pmRrcConnEstabAttHpa"] / counters["pmRrcConnEstabAtt"]
+	// kpi["Acc_InitialERabEstabFailureRateDueToMultipleLicense"] = 100 * counters["pmErabEstabFailInitLic"] / counters["pmErabEstabAttInit"]
+	// kpi["Acc_InitialUEContextEstabSuccRate"] = 100 * counters["pmUeCtxtEstabSucc"] / counters["pmUeCtxtEstabAtt"]
+	// kpi["Acc_PagingDiscardRate"] = 100 * counters["pmPagDiscarded"] / counters["pmPagReceived"]
+	// kpi["Acc_RandomAccessDecodingRate"] = 100 * counters["pmRaSuccCbra"] / counters["pmRaAttCbra"]
+	// kpi["Acc_RandomAccessMSG2Congestion"] = 100 * counters["pmRaFailCbraMsg2Disc"] / counters["pmRaAttCbra"]
 
 	return kpi
 }
