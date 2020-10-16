@@ -6,60 +6,61 @@ import (
 	"xml-parser/models"
 )
 
-func Calculate(mdc models.MDC) map[string]map[string]int {
+func Calculate(mdc models.MDC) []models.KPIJsonModel {
 	siteName := strings.Split(strings.Split(mdc.Mfh.Sn, ",")[2], "=")[1]
 
-	kpis := accessibilityCalculation(mdc, siteName)
-	return kpis
+	KPIsModelList := accessibilityCalculation(mdc, siteName)
+	return KPIsModelList
 }
 
-func accessibilityCalculation(mdc models.MDC, siteName string) map[string]map[string]int {
-	md2761 := PopulateCountersKeyValue(mdc, siteName)
-	KPIs := calculateAccessibilityKPIs(md2761, siteName)
+func accessibilityCalculation(mdc models.MDC, siteName string) []models.KPIJsonModel {
+	countersModelList := PopulateCountersKeyValue(mdc, siteName)
+	KPIsModelList := calculateAccessibilityKPIs(countersModelList)
 
-	for key, value := range KPIs {
-		println("-------------", key, "---------------------")
-		for k, v := range value {
-			println(k, ":", v)
-		}
-	}
-	return KPIs
+	return KPIsModelList
 }
 
-func PopulateCountersKeyValue(mdc models.MDC, siteName string) map[string]map[string]string {
-
-	md2761 := make(map[string]map[string]string)
-
+func PopulateCountersKeyValue(mdc models.MDC, siteName string) []models.CountersJsonModel {
+	var outputCountersList []models.CountersJsonModel
 	mdList := []uint{27, 61}
-	EUtranCellFDD := []string{siteName + "A0", siteName + "A10", siteName + "A2", siteName + "B0", siteName + "B1", siteName + "B2",
-		siteName + "C0", siteName + "C1", siteName + "C2"}
-	for moidKey, moid := range EUtranCellFDD {
-		md2761[moid] = make(map[string]string)
+	cells := []string{"A0", "A10", "A2", "B0", "B1", "B2", "C0", "C1", "C2"}
+	for cellKey, cell := range cells {
+		output := new(models.CountersJsonModel)
+		output.SiteName = siteName
+		output.SectorName = cell[0:1]
+		output.CellName = cell
+		output.Counters = make(map[string]string)
 		for _, md := range mdList {
 			mt := mdc.Md[md].Mi.Mt
 			mv := mdc.Md[md].Mi.Mv
 			for i, el := range mt {
-				md2761[moid][el] = mv[moidKey].R[i]
+				output.Counters[el] = mv[cellKey].R[i]
 			}
 		}
+		outputCountersList = append(outputCountersList, *output)
 	}
 
-	return md2761
+	return outputCountersList
 }
 
-func calculateAccessibilityKPIs(md2761 map[string]map[string]string, siteName string) map[string]map[string]int {
-	KPIs := make(map[string]map[string]int)
+func calculateAccessibilityKPIs(countersModelList []models.CountersJsonModel) []models.KPIJsonModel {
+	var outputKPIList []models.KPIJsonModel
 
-	for EUtranCellFDDKey, EUtranCellFDDValue := range md2761 {
-		counters := ConvertCounterToInt(EUtranCellFDDValue)
+	for _, counterModel := range countersModelList {
+		kpiOutput := new(models.KPIJsonModel)
+		kpiOutput.SiteName = counterModel.SiteName
+		kpiOutput.SectorName = counterModel.SectorName
+		kpiOutput.CellName = counterModel.CellName
+		kpiOutput.KPIs = make(map[string]int)
 
+		counters := ConvertCounterToInt(counterModel.Counters)
 		kpis := calculateKPIs(counters)
 
-		KPIs[EUtranCellFDDKey] = kpis
-		KPIs[EUtranCellFDDKey]["siteName"] = siteName
+		kpiOutput.KPIs = kpis
+		outputKPIList = append(outputKPIList, *kpiOutput)
 	}
 
-	return KPIs
+	return outputKPIList
 }
 
 func ConvertCounterToInt(EUtranCellFDDValue map[string]string) map[string]int {

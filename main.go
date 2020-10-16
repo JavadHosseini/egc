@@ -12,7 +12,7 @@ import (
 
 func main() {
 	http.HandleFunc("/kpis", kpis)
-	http.HandleFunc("/counters", counters)
+	//http.HandleFunc("/counters", counters)
 
 	log.Fatal(http.ListenAndServe(":8082", nil))
 }
@@ -51,28 +51,28 @@ func kpis(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func counters(w http.ResponseWriter, req *http.Request) {
-	var mdc models.MDC
-	xmlByte, err := ioutil.ReadFile("data.xml")
-	if err != nil {
-		println("Error in loading data file...")
-	}
-	xml.Unmarshal(xmlByte, &mdc)
-	output := calculation.PopulateCountersKeyValue(mdc, "siteName")
-	intOutput := make(map[string]map[string]int)
+// func counters(w http.ResponseWriter, req *http.Request) {
+// 	var mdc models.MDC
+// 	xmlByte, err := ioutil.ReadFile("data.xml")
+// 	if err != nil {
+// 		println("Error in loading data file...")
+// 	}
+// 	xml.Unmarshal(xmlByte, &mdc)
+// 	output := calculation.PopulateCountersKeyValue(mdc, "siteName")
+// 	intOutput := make(map[string]map[string]int)
 
-	for EUtranCellFDDKey, EUtranCellFDDValue := range output {
-		counters := calculation.ConvertCounterToInt(EUtranCellFDDValue)
+// 	for EUtranCellFDDKey, EUtranCellFDDValue := range output {
+// 		counters := calculation.ConvertCounterToInt(EUtranCellFDDValue)
 
-		intOutput[EUtranCellFDDKey] = counters
-	}
+// 		intOutput[EUtranCellFDDKey] = counters
+// 	}
 
-	jsOutput, err := json.Marshal(intOutput)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	print("counters are ok!")
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsOutput)
-}
+// 	jsOutput, err := json.Marshal(intOutput)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
+// 	print("counters are ok!")
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.Write(jsOutput)
+// }
