@@ -29,12 +29,12 @@ func PopulateCountersKeyValue(mdc models.MDC, siteName string) []models.Counters
 		output.SiteName = siteName
 		output.SectorName = cell[0:1]
 		output.CellName = cell
-		output.Counters = make(map[string]string)
+		output.StringCounters = make(map[string]string)
 		for _, md := range mdList {
 			mt := mdc.Md[md].Mi.Mt
 			mv := mdc.Md[md].Mi.Mv
 			for i, el := range mt {
-				output.Counters[el] = mv[cellKey].R[i]
+				output.StringCounters[el] = mv[cellKey].R[i]
 			}
 		}
 		outputCountersList = append(outputCountersList, *output)
@@ -53,7 +53,7 @@ func calculateAccessibilityKPIs(countersModelList []models.CountersJsonModel) []
 		kpiOutput.CellName = counterModel.CellName
 		kpiOutput.KPIs = make(map[string]int)
 
-		counters := ConvertCounterToInt(counterModel.Counters)
+		counters := ConvertCounterToInt(counterModel.StringCounters)
 		kpis := calculateKPIs(counters)
 
 		kpiOutput.KPIs = kpis
